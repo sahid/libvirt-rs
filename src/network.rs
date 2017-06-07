@@ -73,27 +73,51 @@ extern "C" {
 pub type NetworkXMLFlags = self::libc::c_uint;
 pub const VIR_NETWORK_XML_INACTIVE: NetworkXMLFlags = 1 << 0;
 
-pub type NetworkUpdateCommand = self::libc::c_uint;
-pub const VIR_NETWORK_UPDATE_COMMAND_NONE: NetworkUpdateCommand = 0;
-pub const VIR_NETWORK_UPDATE_COMMAND_MODIFY: NetworkUpdateCommand = 1;
-pub const VIR_NETWORK_UPDATE_COMMAND_DELETE: NetworkUpdateCommand = 2;
-pub const VIR_NETWORK_UPDATE_COMMAND_ADD_LAST: NetworkUpdateCommand = 3;
-pub const VIR_NETWORK_UPDATE_COMMAND_ADD_FIRST: NetworkUpdateCommand = 4;
+virt_enum! {
+    NetworkUpdateCommand {
+        /// None
+        None -> 0,
+        /// Modify
+        Modify -> 1,
+        /// Delete
+        Delete -> 2,
+        /// AddLast
+        AddLast -> 3,
+        /// AddFirst
+        AddFirst -> 4,
+    }
+}
 
-pub type NetworkUpdateSection = self::libc::c_uint;
-pub const VIR_NETWORK_SECTION_NONE: NetworkUpdateSection = 0;
-pub const VIR_NETWORK_SECTION_BRIDGE: NetworkUpdateSection = 1;
-pub const VIR_NETWORK_SECTION_DOMAIN: NetworkUpdateSection = 2;
-pub const VIR_NETWORK_SECTION_IP: NetworkUpdateSection = 3;
-pub const VIR_NETWORK_SECTION_IP_DHCP_HOST: NetworkUpdateSection = 4;
-pub const VIR_NETWORK_SECTION_IP_DHCP_RANGE: NetworkUpdateSection = 5;
-pub const VIR_NETWORK_SECTION_FORWARD: NetworkUpdateSection = 6;
-pub const VIR_NETWORK_SECTION_FORWARD_INTERFACE: NetworkUpdateSection = 7;
-pub const VIR_NETWORK_SECTION_FORWARD_PF: NetworkUpdateSection = 8;
-pub const VIR_NETWORK_SECTION_PORTGROUP: NetworkUpdateSection = 9;
-pub const VIR_NETWORK_SECTION_DNS_HOST: NetworkUpdateSection = 10;
-pub const VIR_NETWORK_SECTION_DNS_TXT: NetworkUpdateSection = 11;
-pub const VIR_NETWORK_SECTION_DNS_SRV: NetworkUpdateSection = 12;
+virt_enum! {
+    NetworkUpdateSection {
+        /// None
+        None -> 0,
+        /// Bridge
+        Bridge -> 1,
+        /// Domain
+        Domain -> 2,
+        /// Ip
+        Ip -> 3,
+        /// IpDhcpHost
+        IpDhcpHost -> 4,
+        /// IpDhcpRange
+        IpDhcpRange -> 5,
+        /// Forward
+        Forward -> 6,
+        /// ForwardInterface
+        ForwardInterface -> 7,
+        /// ForwardPf
+        ForwardPf -> 8,
+        /// Portgroup
+        Portgroup -> 9,
+        /// DnsHost
+        DnsHost -> 10,
+        /// DnsTxt
+        DnsTxt -> 11,
+        /// DnsSrv
+        DnsSrv -> 12,
+    }
+}
 
 pub type NetworkUpdateFlags = self::libc::c_uint;
 pub const VIR_NETWORK_UPDATE_AFFECT_CURRENT: NetworkUpdateFlags = 0;
@@ -319,8 +343,8 @@ impl Network {
                   -> Result<(), Error> {
         unsafe {
             let ret = virNetworkUpdate(self.as_ptr(),
-                                       cmd,
-                                       section,
+                                       cmd.into(),
+                                       section.into(),
                                        index as libc::c_uint,
                                        string_to_c_chars!(xml),
                                        flags);

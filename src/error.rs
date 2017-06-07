@@ -42,20 +42,14 @@ extern "C" {
     fn virGetLastError() -> sys::virErrorPtr;
 }
 
-#[derive(Debug, PartialEq)]
-pub enum ErrorLevel {
-    None,
-    Warning,
-    Error,
-}
-
-impl ErrorLevel {
-    pub fn new(level: u32) -> ErrorLevel {
-        match level {
-            0 => ErrorLevel::None,
-            1 => ErrorLevel::Warning,
-            _ => ErrorLevel::Error,
-        }
+virt_enum! {
+    ErrorLevel {
+        /// None
+        None -> 0,
+        /// Warning
+        Warning -> 1,
+        /// Error
+        Error -> 2,
     }
 }
 
@@ -78,7 +72,7 @@ impl Error {
                 code: (*ptr).code,
                 domain: (*ptr).domain,
                 message: c_chars_to_string!((*ptr).message, nofree),
-                level: ErrorLevel::new((*ptr).level as u32),
+                level: ((*ptr).level as u32).into(),
             }
         }
     }

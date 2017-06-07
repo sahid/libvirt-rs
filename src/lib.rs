@@ -101,6 +101,81 @@ macro_rules! string_to_mut_c_chars {
     ($x:expr) => (::std::ffi::CString::new($x).unwrap().into_raw())
 }
 
+macro_rules! virt_enum {
+    ($name:ident { $(#[$meta:meta] $tag:ident -> $value:expr),*, }) => (virt_enum!($name { $(#[$meta] $tag -> $value),* }););
+    ($name:ident { $(#[$meta:meta] $tag:ident -> $value:expr),* }) => {
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum $name {
+    $(#[$meta]
+    $tag),*,
+    Custom(u32),
+}
+
+impl ::std::fmt::Display for $name {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter) -> Result<(), ::std::fmt::Error> {
+        write!(f, "{:?}", self)
+    }
+}
+
+impl From<u32> for $name {
+    fn from(flag: u32) -> Self {
+        match flag {
+            $($value => $name::$tag),*,
+            s => $name::Custom(s),
+        }
+    }
+}
+
+impl From<$name> for u32 {
+    fn from(flag: $name) -> Self {
+        match flag {
+            $($name::$tag => $value),*,
+            $name::Custom(s) => s,
+        }
+    }
+}
+
+impl From<i32> for $name {
+    fn from(flag: i32) -> Self {
+        match flag as u32 {
+            $($value => $name::$tag),*,
+            s => $name::Custom(s),
+        }
+    }
+}
+
+impl From<$name> for i32 {
+    fn from(flag: $name) -> Self {
+        let flag = match flag {
+            $($name::$tag => $value),*,
+            $name::Custom(s) => s,
+        };
+        flag as i32
+    }
+}
+
+impl From<u64> for $name {
+    fn from(flag: u64) -> Self {
+        match flag as u32 {
+            $($value => $name::$tag),*,
+            s => $name::Custom(s),
+        }
+    }
+}
+
+impl From<$name> for u64 {
+    fn from(flag: $name) -> Self {
+        let flag = match flag {
+            $($name::$tag => $value),*,
+            $name::Custom(s) => s,
+        };
+        flag as u64
+    }
+}
+    };
+}
+
 pub mod typedparam;
 pub mod connect;
 pub mod domain;

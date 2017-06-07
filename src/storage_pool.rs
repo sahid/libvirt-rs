@@ -110,17 +110,25 @@ pub const STORAGE_POOL_CREATE_WITH_BUILD: StoragePoolCreateFlags = 1 << 0;
 pub const STORAGE_POOL_CREATE_WITH_BUILD_OVERWRITE: StoragePoolCreateFlags = 1 << 1;
 pub const STORAGE_POOL_CREATE_WITH_BUILD_NO_OVERWRITE: StoragePoolCreateFlags = 1 << 2;
 
-pub type StoragePoolState = self::libc::c_uint;
-pub const VIR_STORAGE_POOL_INACTIVE: StoragePoolState = 0;
-pub const VIR_STORAGE_POOL_BUILDING: StoragePoolState = 1;
-pub const VIR_STORAGE_POOL_RUNNING: StoragePoolState = 2;
-pub const VIR_STORAGE_POOL_DEGRADED: StoragePoolState = 3;
-pub const VIR_STORAGE_POOL_INACCESSIBLE: StoragePoolState = 4;
+virt_enum! {
+    StoragePoolState {
+        /// Inactive
+        Inactive -> 0,
+        /// Building
+        Building -> 1,
+        /// Running
+        Running -> 2,
+        /// Degraded
+        Degraded -> 3,
+        /// Inaccessible
+        Inaccessible -> 4,
+    }
+}
 
 #[derive(Clone, Debug)]
 pub struct StoragePoolInfo {
     /// A `StoragePoolState` flags
-    pub state: u32,
+    pub state: StoragePoolState,
     /// Logical size bytes.
     pub capacity: u64,
     /// Current allocation bytes.
@@ -133,7 +141,7 @@ impl StoragePoolInfo {
     pub fn from_ptr(ptr: sys::virStoragePoolInfoPtr) -> StoragePoolInfo {
         unsafe {
             StoragePoolInfo {
-                state: (*ptr).state as StoragePoolState,
+                state: (*ptr).state.into(),
                 capacity: (*ptr).capacity as u64,
                 allocation: (*ptr).allocation as u64,
                 available: (*ptr).available as u64,

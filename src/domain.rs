@@ -381,11 +381,18 @@ extern "C" {
                                  -> libc::c_int;
 }
 
-pub type DomainXMLFlags = self::libc::c_uint;
-pub const VIR_DOMAIN_XML_SECURE: DomainXMLFlags = 1 << 0;
-pub const VIR_DOMAIN_XML_INACTIVE: DomainXMLFlags = 1 << 1;
-pub const VIR_DOMAIN_XML_UPDATE_CPU: DomainXMLFlags = 1 << 2;
-pub const VIR_DOMAIN_XML_MIGRATABLE: DomainXMLFlags = 1 << 3;
+virt_enum! {
+    DomainXMLFlags {
+        /// Secure
+        Secure -> 1,
+        /// Inactive
+        Inactive -> 2,
+        /// UpdateCpu
+        UpdateCpu -> 4,
+        /// Migratable
+        Migratable -> 8,
+    }
+}
 
 pub type DomainCreateFlags = self::libc::c_uint;
 pub const VIR_DOMAIN_NONE: DomainCreateFlags = 0;
@@ -445,20 +452,37 @@ pub const VIR_DOMAIN_SAVE_BYPASS_CACHE: DomainSaveRestoreFlags = 1 << 0;
 pub const VIR_DOMAIN_SAVE_RUNNING: DomainSaveRestoreFlags = 1 << 1;
 pub const VIR_DOMAIN_SAVE_PAUSED: DomainSaveRestoreFlags = 1 << 2;
 
-pub type DomainNumatuneMemMode = self::libc::c_int;
-pub const VIR_DOMAIN_NUMATUNE_MEM_STRICT: DomainNumatuneMemMode = 0;
-pub const VIR_DOMAIN_NUMATUNE_MEM_PREFERRED: DomainNumatuneMemMode = 1;
-pub const VIR_DOMAIN_NUMATUNE_MEM_INTERLEAVE: DomainNumatuneMemMode = 2;
+virt_enum! {
+    DomainNumatuneMemMode {
+        /// Strict
+        Strict -> 0,
+        /// Preferred
+        Preferred -> 1,
+        /// Interleave
+        Interleave -> 2,
+    }
+}
 
-pub type DomainState = self::libc::c_uint;
-pub const VIR_DOMAIN_NOSTATE: DomainState = 0;
-pub const VIR_DOMAIN_RUNNING: DomainState = 1;
-pub const VIR_DOMAIN_BLOCKED: DomainState = 2;
-pub const VIR_DOMAIN_PAUSED: DomainState = 3;
-pub const VIR_DOMAIN_SHUTDOWN: DomainState = 4;
-pub const VIR_DOMAIN_SHUTOFF: DomainState = 5;
-pub const VIR_DOMAIN_CRASHED: DomainState = 6;
-pub const VIR_DOMAIN_PMSUSPENDED: DomainState = 7;
+virt_enum! {
+    DomainState {
+        /// Nostate
+        Nostate -> 0,
+        /// Running
+        Running -> 1,
+        /// Blocked
+        Blocked -> 2,
+        /// Paused
+        Paused -> 3,
+        /// Shutdown
+        Shutdown -> 4,
+        /// Shutoff
+        Shutoff -> 5,
+        /// Crashed
+        Crashed -> 6,
+        /// PmSuspended
+        PmSuspended -> 7,
+    }
+}
 
 #[derive(Clone, Debug)]
 pub struct DomainInfo {
@@ -478,7 +502,7 @@ impl DomainInfo {
     pub fn from_ptr(ptr: sys::virDomainInfoPtr) -> DomainInfo {
         unsafe {
             DomainInfo {
-                state: (*ptr).state as DomainState,
+                state: ((*ptr).state as u32).into(),
                 max_mem: (*ptr).maxMem as u64,
                 memory: (*ptr).memory as u64,
                 nr_virt_cpu: (*ptr).nrVirtCpu as u32,
@@ -568,7 +592,7 @@ impl NUMAParameters {
                     "numa_nodeset" => {
                         ret.node_set = Some(c_chars_to_string!(param.value as *mut libc::c_char))
                     }
-                    "numa_mode" => ret.mode = Some(param.value as libc::c_int),
+                    "numa_mode" => ret.mode = Some(DomainNumatuneMemMode::from(param.value as libc::c_int)),
                     unknow => panic!("Field not implemented for NUMAParameters, {:?}", unknow),
                 }
             }
@@ -704,7 +728,7 @@ impl Domain {
             if ret == -1 {
                 return Err(Error::new());
             }
-            return Ok((state as DomainState, reason as i32));
+            return Ok(((state as u32).into(), reason as i32));
         }
     }
 
@@ -1683,28 +1707,28 @@ impl Domain {
             if params.hard_limit.is_some() {
                 cparams.push(virTypedParameter {
                                  field: to_arr("hard_limit\0"),
-                                 typed: ::typedparam::VIR_TYPED_PARAM_ULLONG,
+                                 typed: ::typedparam::TypedParameterType::Ullong.into(),
                                  value: params.hard_limit.unwrap(),
                              })
             }
             if params.soft_limit.is_some() {
                 cparams.push(virTypedParameter {
                                  field: to_arr("soft_limit\0"),
-                                 typed: ::typedparam::VIR_TYPED_PARAM_ULLONG,
+                                 typed: ::typedparam::TypedParameterType::Ullong.into(),
                                  value: params.soft_limit.unwrap(),
                              })
             }
             if params.min_guarantee.is_some() {
                 cparams.push(virTypedParameter {
                                  field: to_arr("min_guarantee\0"),
-                                 typed: ::typedparam::VIR_TYPED_PARAM_ULLONG,
+                                 typed: ::typedparam::TypedParameterType::Ullong.into(),
                                  value: params.min_guarantee.unwrap(),
                              })
             }
             if params.swap_hard_limit.is_some() {
                 cparams.push(virTypedParameter {
                                  field: to_arr("swap_hard_limit\0"),
-                                 typed: ::typedparam::VIR_TYPED_PARAM_ULLONG,
+                                 typed: ::typedparam::TypedParameterType::Ullong.into(),
                                  value: params.swap_hard_limit.unwrap(),
                              })
             }
@@ -1836,15 +1860,15 @@ impl Domain {
             if params.node_set.is_some() {
                 cparams.push(virTypedParameter {
                                  field: to_arr("numa_nodeset\0"),
-                                 typed: ::typedparam::VIR_TYPED_PARAM_STRING,
+                                 typed: ::typedparam::TypedParameterType::String.into(),
                                  value: string_to_mut_c_chars!(params.node_set.unwrap()) as u64,
                              })
             }
             if params.mode.is_some() {
                 cparams.push(virTypedParameter {
                                  field: to_arr("numa_mode\0"),
-                                 typed: ::typedparam::VIR_TYPED_PARAM_INT,
-                                 value: params.mode.unwrap() as u64,
+                                 typed: ::typedparam::TypedParameterType::Int.into(),
+                                 value: params.mode.unwrap().into(),
                              })
             }
 
