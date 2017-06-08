@@ -41,7 +41,7 @@ extern crate virt;
 
 use std::{env, io};
 
-use virt::connect::{Connect, ConnectCredential, ConnectAuth};
+use virt::connect::{Connect, ConnectCredential, ConnectAuth, ConnectCredentialType};
 
 fn main() {
     let uri = match env::args().nth(1) {
@@ -55,11 +55,11 @@ fn main() {
 
             println!("{}:", cred.prompt);
             match cred.typed {
-                ::virt::connect::VIR_CRED_AUTHNAME => {
+                ConnectCredentialType::Authname => {
                     io::stdin().read_line(&mut input).expect("");
                     cred.result = Some(String::from(input.trim()));
                 }
-                ::virt::connect::VIR_CRED_PASSPHRASE => {
+                ConnectCredentialType::Passphrase => {
                     io::stdin().read_line(&mut input).expect("");
                     cred.result = Some(String::from(input.trim()));
                 }
@@ -69,8 +69,8 @@ fn main() {
             }
         }
     };
-    let mut auth = ConnectAuth::new(vec![::virt::connect::VIR_CRED_AUTHNAME,
-                                         ::virt::connect::VIR_CRED_PASSPHRASE],
+    let mut auth = ConnectAuth::new(vec![ConnectCredentialType::Authname,
+                                         ConnectCredentialType::Passphrase],
                                     callback);
 
     println!("Attempting to connect to hypervisor: '{}'...", uri);

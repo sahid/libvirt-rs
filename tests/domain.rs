@@ -20,7 +20,7 @@ extern crate virt;
 
 mod common;
 
-use virt::domain::Domain;
+use virt::domain::{Domain, DomainState};
 
 
 fn tdom(exec_test: fn(dom: Domain)) {
@@ -73,7 +73,7 @@ fn test_get_xml_desc() {
 fn test_get_info() {
     fn t(dom: Domain) {
         match dom.get_info() {
-            Ok(info) => assert_eq!(1, info.state),
+            Ok(info) => assert_eq!(DomainState::Running, info.state),
             Err(_) => panic!("should have a node info"),
         }
     }
@@ -117,7 +117,7 @@ fn test_create_with_flags() {
     let c = common::conn();
     let d = common::build_test_domain(&c, "create", false);
     assert_eq!(Ok(0), d.create_with_flags(0));
-    assert_eq!(Ok((::virt::domain::VIR_DOMAIN_RUNNING, 1)), d.get_state());
+    assert_eq!(Ok((DomainState::Running, 1)), d.get_state());
     assert_eq!(Ok(String::from("libvirt-rs-test-create")), d.get_name());
     common::clean(d);
     common::close(c);
@@ -128,9 +128,9 @@ fn test_shutdown() {
     let c = common::conn();
     let d = common::build_test_domain(&c, "shutdown", false);
     assert_eq!(Ok(0), d.create_with_flags(0));
-    assert_eq!(Ok((::virt::domain::VIR_DOMAIN_RUNNING, 1)), d.get_state());
+    assert_eq!(Ok((DomainState::Running, 1)), d.get_state());
     assert_eq!(Ok(0), d.shutdown());
-    assert_eq!(Ok((::virt::domain::VIR_DOMAIN_SHUTOFF, 1)), d.get_state());
+    assert_eq!(Ok((DomainState::Shutoff, 1)), d.get_state());
     common::clean(d);
     common::close(c);
 }
@@ -140,11 +140,11 @@ fn test_pause_resume() {
     let c = common::conn();
     let d = common::build_test_domain(&c, "pause_resume", false);
     assert_eq!(Ok(0), d.create_with_flags(0));
-    assert_eq!(Ok((::virt::domain::VIR_DOMAIN_RUNNING, 1)), d.get_state());
+    assert_eq!(Ok((DomainState::Running, 1)), d.get_state());
     assert_eq!(Ok(0), d.suspend());
-    assert_eq!(Ok((::virt::domain::VIR_DOMAIN_PAUSED, 1)), d.get_state());
+    assert_eq!(Ok((DomainState::Paused, 1)), d.get_state());
     assert_eq!(Ok(0), d.resume());
-    assert_eq!(Ok((::virt::domain::VIR_DOMAIN_RUNNING, 5)), d.get_state());
+    assert_eq!(Ok((DomainState::Running, 5)), d.get_state());
     common::clean(d);
     common::close(c);
 }

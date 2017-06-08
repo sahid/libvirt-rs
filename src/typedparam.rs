@@ -51,11 +51,21 @@ pub mod sys {
     pub type virTypedParameterPtr = *mut virTypedParameter;
 }
 
-pub type TypedParameterType = self::libc::c_int;
-pub const VIR_TYPED_PARAM_INT: TypedParameterType = 1;
-pub const VIR_TYPED_PARAM_UINT: TypedParameterType = 2;
-pub const VIR_TYPED_PARAM_LLONG: TypedParameterType = 3;
-pub const VIR_TYPED_PARAM_ULLONG: TypedParameterType = 4;
-pub const VIR_TYPED_PARAM_DOUBLE: TypedParameterType = 5;
-pub const VIR_TYPED_PARAM_BOOLEAN: TypedParameterType = 6;
-pub const VIR_TYPED_PARAM_STRING: TypedParameterType = 7;
+virt_enum! {
+    TypedParameterType {
+        /// Int
+        Int -> 1,
+        /// Uint
+        Uint -> 2,
+        /// Llong
+        Llong -> 3,
+        /// Ullong
+        Ullong -> 4,
+        /// Double
+        Double -> 5,
+        /// Boolean
+        Boolean -> 6,
+        /// String
+        String -> 7,
+    }
+}

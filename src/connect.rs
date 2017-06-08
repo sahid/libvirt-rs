@@ -338,16 +338,28 @@ pub type BaselineCPUFlags = self::libc::c_int;
 pub const VIR_CONNECT_BASELINE_CPU_EXPAND_FEATURES: BaselineCPUFlags = (1 << 0);
 pub const VIR_CONNECT_BASELINE_CPU_MIGRATABLE: BaselineCPUFlags = (1 << 1);
 
-pub type ConnectCredentialType = self::libc::c_int;
-pub const VIR_CRED_USERNAME: ConnectCredentialType = 1;
-pub const VIR_CRED_AUTHNAME: ConnectCredentialType = 2;
-pub const VIR_CRED_LANGUAGE: ConnectCredentialType = 3;
-pub const VIR_CRED_CNONCE: ConnectCredentialType = 4;
-pub const VIR_CRED_PASSPHRASE: ConnectCredentialType = 5;
-pub const VIR_CRED_ECHOPROMPT: ConnectCredentialType = 6;
-pub const VIR_CRED_NOECHOPROMPT: ConnectCredentialType = 7;
-pub const VIR_CRED_REALM: ConnectCredentialType = 8;
-pub const VIR_CRED_EXTERNAL: ConnectCredentialType = 9;
+virt_enum! {
+    ConnectCredentialType {
+        /// Username
+        Username -> 1,
+        /// Authname
+        Authname -> 2,
+        /// Language
+        Language -> 3,
+        /// Cnonce
+        Cnonce -> 4,
+        /// Passphrase
+        Passphrase -> 5,
+        /// Echoprompt
+        Echoprompt -> 6,
+        /// Noechoprompt
+        Noechoprompt -> 7,
+        /// Realm
+        Realm -> 8,
+        /// External
+        External -> 9,
+    }
+}
 
 #[derive(Clone, Debug)]
 pub struct NodeInfo {
@@ -380,7 +392,7 @@ pub type ConnectAuthCallback = fn(creds: &mut Vec<ConnectCredential>);
 #[derive(Clone, Debug)]
 pub struct ConnectCredential {
     /// One of `ConnectCredentialType` constants
-    pub typed: i32,
+    pub typed: ConnectCredentialType,
     /// Prompt to show to user.
     pub prompt: String,
     /// Additional challenge to show.
@@ -399,7 +411,7 @@ impl ConnectCredential {
                 default = c_chars_to_string!((*cred).defresult, nofree);
             }
             ConnectCredential {
-                typed: (*cred).typed,
+                typed: (*cred).typed.into(),
                 prompt: c_chars_to_string!((*cred).prompt, nofree),
                 challenge: c_chars_to_string!((*cred).challenge, nofree),
                 def_result: default,
@@ -448,8 +460,9 @@ impl ConnectAuth {
         }
 
         unsafe {
+            let mut cred = self.creds[0].clone().into();
             sys::virConnectAuth {
-                credtype: &mut self.creds[0],
+                credtype: &mut cred,
                 ncredtype: self.creds.len() as u32,
                 cb: wrapper,
                 cbdata: mem::transmute(self.callback),

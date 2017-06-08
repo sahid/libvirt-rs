@@ -28,6 +28,7 @@ use std::env;
 
 use virt::connect::Connect;
 use virt::error::Error;
+use virt::domain::DomainNumatuneMemMode;
 
 
 fn show_hypervisor_info(conn: &Connect) -> Result<(), Error> {
@@ -87,7 +88,7 @@ fn show_domains(conn: &Connect) -> Result<(), Error> {
                         println!("NUMA:");
                         println!("    Node Set: {}",
                                  numa.node_set.unwrap_or(String::from("")));
-                        println!("    Mode: {}", numa.mode.unwrap_or(0));
+                        println!("    Mode: {}", numa.mode.unwrap_or(DomainNumatuneMemMode::Strict));
                     }
                 }
             }

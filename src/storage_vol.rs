@@ -125,30 +125,52 @@ pub const VIR_STORAGE_VOL_RESIZE_ALLOCATE: StorageVolResizeFlags = 1 << 0;
 pub const VIR_STORAGE_VOL_RESIZE_DELTA: StorageVolResizeFlags = 1 << 1;
 pub const VIR_STORAGE_VOL_RESIZE_SHRINK: StorageVolResizeFlags = 1 << 2;
 
-pub type StorageVolWipeAlgorithm = self::libc::c_uint;
-pub const VIR_STORAGE_VOL_WIPE_ALG_ZERO: StorageVolWipeAlgorithm = 0;
-pub const VIR_STORAGE_VOL_WIPE_ALG_NNSA: StorageVolWipeAlgorithm = 1;
-pub const VIR_STORAGE_VOL_WIPE_ALG_DOD: StorageVolWipeAlgorithm = 2;
-pub const VIR_STORAGE_VOL_WIPE_ALG_BSI: StorageVolWipeAlgorithm = 3;
-pub const VIR_STORAGE_VOL_WIPE_ALG_GUTMANN: StorageVolWipeAlgorithm = 4;
-pub const VIR_STORAGE_VOL_WIPE_ALG_SCHNEIER: StorageVolWipeAlgorithm = 5;
-pub const VIR_STORAGE_VOL_WIPE_ALG_PFITZNER7: StorageVolWipeAlgorithm = 6;
-pub const VIR_STORAGE_VOL_WIPE_ALG_PFITZNER33: StorageVolWipeAlgorithm = 7;
-pub const VIR_STORAGE_VOL_WIPE_ALG_RANDOM: StorageVolWipeAlgorithm = 8;
-pub const VIR_STORAGE_VOL_WIPE_ALG_TRIM: StorageVolWipeAlgorithm = 9;
+virt_enum! {
+    StorageVolWipeAlgorithm {
+        /// Zero
+        Zero -> 0,
+        /// Nnsa
+        Nnsa -> 1,
+        /// Dod
+        Dod -> 2,
+        /// Bsi
+        Bsi -> 3,
+        /// Gutmann
+        Gutmann -> 4,
+        /// Schneier
+        Schneier -> 5,
+        /// Pfitzner7
+        Pfitzner7 -> 6,
+        /// Pfitzner33
+        Pfitzner33 -> 7,
+        /// Random
+        Random -> 8,
+        /// Trim
+        Trim -> 9,
+    }
+}
 
-pub type StorageVolType = self::libc::c_uint;
-pub const VIR_STORAGE_VOL_FILE: StorageVolType = 0;
-pub const VIR_STORAGE_VOL_BLOCK: StorageVolType = 1;
-pub const VIR_STORAGE_VOL_DIR: StorageVolType = 2;
-pub const VIR_STORAGE_VOL_NETWORK: StorageVolType = 3;
-pub const VIR_STORAGE_VOL_NETDIR: StorageVolType = 4;
-pub const VIR_STORAGE_VOL_PLOOP: StorageVolType = 5;
+virt_enum! {
+    StorageVolType {
+        /// File
+        File -> 0,
+        /// Block
+        Block -> 1,
+        /// Dir
+        Dir -> 2,
+        /// Network
+        Network -> 3,
+        /// Netdir
+        Netdir -> 4,
+        /// Ploop
+        Ploop -> 5,
+    }
+}
 
 #[derive(Clone, Debug)]
 pub struct StorageVolInfo {
     /// See: `virStorageVolType` flags
-    pub kind: u32,
+    pub kind: StorageVolType,
     /// Logical size bytes.
     pub capacity: u64,
     /// Current allocation bytes
@@ -159,7 +181,7 @@ impl StorageVolInfo {
     pub fn from_ptr(ptr: sys::virStorageVolInfoPtr) -> StorageVolInfo {
         unsafe {
             StorageVolInfo {
-                kind: (*ptr).kind as StorageVolType,
+                kind: (*ptr).kind.into(),
                 capacity: (*ptr).capacity as u64,
                 allocation: (*ptr).allocation as u64,
             }
@@ -329,7 +351,7 @@ impl StorageVol {
     pub fn wipe_pattern(&self, algo: StorageVolWipeAlgorithm, flags: u32) -> Result<(), Error> {
         unsafe {
             if virStorageVolWipePattern(self.as_ptr(),
-                                        algo as libc::c_uint,
+                                        algo.into(),
                                         flags as libc::c_uint) == -1 {
                 return Err(Error::new());
             }
