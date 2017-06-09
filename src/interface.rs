@@ -61,8 +61,12 @@ extern "C" {
     fn virInterfaceGetConnect(ptr: sys::virInterfacePtr) -> virConnectPtr;
 }
 
-pub type InterfaceXMLFlags = self::libc::c_uint;
-pub const VIR_INTERFACE_XML_INACTIVE: InterfaceXMLFlags = 1 << 0;
+#[derive(Debug, PartialEq)]
+pub enum XMLFlags {
+    ACTIVE = 0,
+    /// Dump inactive interface information.
+    INACTIVE = 1,
+}
 
 /// Provides APIs for the management of interfaces.
 ///
@@ -175,9 +179,9 @@ impl Interface {
         }
     }
 
-    pub fn get_xml_desc(&self, flags: InterfaceXMLFlags) -> Result<String, Error> {
+    pub fn get_xml_desc(&self, flags: XMLFlags) -> Result<String, Error> {
         unsafe {
-            let xml = virInterfaceGetXMLDesc(self.as_ptr(), flags);
+            let xml = virInterfaceGetXMLDesc(self.as_ptr(), flags as libc::c_uint);
             if xml.is_null() {
                 return Err(Error::new());
             }
@@ -185,9 +189,9 @@ impl Interface {
         }
     }
 
-    pub fn create(&self, flags: InterfaceXMLFlags) -> Result<u32, Error> {
+    pub fn create(&self, flags: XMLFlags) -> Result<u32, Error> {
         unsafe {
-            let ret = virInterfaceCreate(self.as_ptr(), flags);
+            let ret = virInterfaceCreate(self.as_ptr(), flags as libc::c_uint);
             if ret == -1 {
                 return Err(Error::new());
             }

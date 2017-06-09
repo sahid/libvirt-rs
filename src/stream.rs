@@ -51,11 +51,13 @@ extern "C" {
     fn virStreamFinish(c: sys::virStreamPtr) -> libc::c_int;
 }
 
-pub type StreamEventType = self::libc::c_uint;
-pub const VIR_STREAM_EVENT_READABLE: StreamEventType = (1 << 0);
-pub const VIR_STREAM_EVENT_WRITABLE: StreamEventType = (1 << 1);
-pub const VIR_STREAM_EVENT_ERROR: StreamEventType = (1 << 2);
-pub const VIR_STREAM_EVENT_HANGUP: StreamEventType = (1 << 3);
+#[derive(Debug, PartialEq)]
+pub enum EventType {
+    READABLE = 1,
+    WRITABLE = 2,
+    ERROR    = 3,
+    HANGUP   = 4,
+}
 
 #[derive(Debug)]
 pub struct Stream {

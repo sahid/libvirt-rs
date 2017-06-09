@@ -101,26 +101,60 @@ extern "C" {
     fn virStoragePoolNumOfVolumes(ptr: sys::virStoragePoolPtr) -> libc::c_int;
 }
 
-pub type StoragePoolXMLFlags = self::libc::c_uint;
-pub const VIR_STORAGE_POOL_XML_INACTIVE: StoragePoolXMLFlags = 1 << 0;
+#[derive(Clone, Debug, PartialEq)]
+pub enum XMLFlags {
+    ACTIVE = 0,
+    INACTIVE = 1,
+}
 
-pub type StoragePoolCreateFlags = self::libc::c_uint;
-pub const STORAGE_POOL_CREATE_NORMAL: StoragePoolCreateFlags = 0;
-pub const STORAGE_POOL_CREATE_WITH_BUILD: StoragePoolCreateFlags = 1 << 0;
-pub const STORAGE_POOL_CREATE_WITH_BUILD_OVERWRITE: StoragePoolCreateFlags = 1 << 1;
-pub const STORAGE_POOL_CREATE_WITH_BUILD_NO_OVERWRITE: StoragePoolCreateFlags = 1 << 2;
+#[derive(Clone, Debug, PartialEq)]
+pub enum CreateFlags {
+    NORMAL = 0,
+    /// Create the pool and perform pool build without any flags.
+    WITH_BUILD = 1,
+    /// Create the pool and perform pool build using the
+    /// VIR_STORAGE_POOL_BUILD_OVERWRITE flag. This is mutually
+    /// exclusive to VIR_STORAGE_POOL_CREATE_WITH_BUILD_NO_OVERWRITE.
+    WITH_BUILD_OVERWRITE = 2,
+    /// Create the pool and perform pool build using the
+    /// VIR_STORAGE_POOL_BUILD_NO_OVERWRITE flag. This is mutually
+    /// exclusive to VIR_STORAGE_POOL_CREATE_WITH_BUILD_OVERWRITE.
+    WITH_BUILD_NO_OVERWRITE = 3,
+}
 
-pub type StoragePoolState = self::libc::c_uint;
-pub const VIR_STORAGE_POOL_INACTIVE: StoragePoolState = 0;
-pub const VIR_STORAGE_POOL_BUILDING: StoragePoolState = 1;
-pub const VIR_STORAGE_POOL_RUNNING: StoragePoolState = 2;
-pub const VIR_STORAGE_POOL_DEGRADED: StoragePoolState = 3;
-pub const VIR_STORAGE_POOL_INACCESSIBLE: StoragePoolState = 4;
+#[derive(Clone, Debug, PartialEq)]
+pub enum State {
+    /// Not running.
+    INACTIVE = 0,
+    /// Initializing pool, not available.
+    BUILDING = 1,
+    /// Running normally.
+    RUNNING = 2,
+    /// Running degraded.
+    DEGRADED = 3,
+    /// Running, but not accessible.
+    INACCESSIBLE = 4,
+}
+
+// TODO(sahid): Should provide a procedural macro
+impl ::std::convert::From<u32> for State {
+    fn from(value: u32) -> State {
+        match value {
+            0 => State::INACTIVE,
+            1 => State::BUILDING,
+            2 => State::RUNNING,
+            3 => State::DEGRADED,
+            4 => State::INACCESSIBLE,
+            unknow => panic!("Invalid State provided: {:?}", unknow)
+        }
+    }
+}
+
 
 #[derive(Clone, Debug)]
 pub struct StoragePoolInfo {
-    /// A `StoragePoolState` flags
-    pub state: u32,
+    /// A `State` flags
+    pub state: State,
     /// Logical size bytes.
     pub capacity: u64,
     /// Current allocation bytes.
@@ -133,7 +167,7 @@ impl StoragePoolInfo {
     pub fn from_ptr(ptr: sys::virStoragePoolInfoPtr) -> StoragePoolInfo {
         unsafe {
             StoragePoolInfo {
-                state: (*ptr).state as StoragePoolState,
+                state: State::from((*ptr).state as u32),
                 capacity: (*ptr).capacity as u64,
                 allocation: (*ptr).allocation as u64,
                 available: (*ptr).available as u64,
@@ -181,7 +215,7 @@ impl StoragePool {
         }
     }
 
-    pub fn define_xml(conn: &Connect, xml: &str, flags: u32) -> Result<StoragePool, Error> {
+    pub fn define_xml(conn: &Connect, xml: &str, flags: CreateFlags) -> Result<StoragePool, Error> {
         unsafe {
             let ptr = virStoragePoolDefineXML(conn.as_ptr(),
                                               string_to_c_chars!(xml),
@@ -195,7 +229,7 @@ impl StoragePool {
 
     pub fn create_xml(conn: &Connect,
                       xml: &str,
-                      flags: StoragePoolCreateFlags)
+                      flags: CreateFlags)
                       -> Result<StoragePool, Error> {
         unsafe {
             let ptr = virStoragePoolCreateXML(conn.as_ptr(),
@@ -278,9 +312,9 @@ impl StoragePool {
         }
     }
 
-    pub fn get_xml_desc(&self, flags: StoragePoolXMLFlags) -> Result<String, Error> {
+    pub fn get_xml_desc(&self, flags: XMLFlags) -> Result<String, Error> {
         unsafe {
-            let xml = virStoragePoolGetXMLDesc(self.as_ptr(), flags);
+            let xml = virStoragePoolGetXMLDesc(self.as_ptr(), flags as libc::c_uint);
             if xml.is_null() {
                 return Err(Error::new());
             }
@@ -288,9 +322,9 @@ impl StoragePool {
         }
     }
 
-    pub fn create(&self, flags: StoragePoolCreateFlags) -> Result<u32, Error> {
+    pub fn create(&self, flags: CreateFlags) -> Result<u32, Error> {
         unsafe {
-            let ret = virStoragePoolCreate(self.as_ptr(), flags);
+            let ret = virStoragePoolCreate(self.as_ptr(), flags as libc::c_uint);
             if ret == -1 {
                 return Err(Error::new());
             }

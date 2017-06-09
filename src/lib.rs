@@ -78,7 +78,7 @@
 //! }
 //! ```
 
-
+#![allow(non_camel_case_types)]
 
 macro_rules! c_chars_to_string {
     ($x:expr) => {{

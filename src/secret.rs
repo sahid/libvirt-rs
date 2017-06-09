@@ -67,23 +67,37 @@ extern "C" {
                           -> sys::virSecretPtr;
 }
 
-pub type SecretXMLFlags = self::libc::c_uint;
-pub const VIR_SECRET_XML_INACTIVE: SecretXMLFlags = 1 << 0;
+#[derive(Clone, Debug, PartialEq)]
+pub enum XMLFlags {
+    INACTIVE = 1,
+}
 
-pub type SecretSecretUsageType = self::libc::c_uint;
-pub const VIR_SECRET_USAGE_TYPE_NONE: SecretSecretUsageType = 0;
-pub const VIR_SECRET_USAGE_TYPE_VOLUME: SecretSecretUsageType = 1;
-pub const VIR_SECRET_USAGE_TYPE_CEPH: SecretSecretUsageType = 2;
-pub const VIR_SECRET_USAGE_TYPE_ISCSI: SecretSecretUsageType = 3;
-pub const VIR_SECRET_USAGE_TYPE_TLS: SecretSecretUsageType = 4;
+#[derive(Clone, Debug, PartialEq)]
+pub enum UsageType {
+    NONE = 0,
+    VOLUME = 1,
+    CEPH = 2,
+    ISCSI = 3,
+    TLS = 4,
+}
 
-pub type SecretsFlags = self::libc::c_uint;
-pub const VIR_CONNECT_LIST_SECRETS_EPHEMERAL: SecretsFlags = 1 << 0;
-pub const VIR_CONNECT_LIST_SECRETS_NO_EPHEMERAL: SecretsFlags = 1 << 1;
-pub const VIR_CONNECT_LIST_SECRETS_PRIVATE: SecretsFlags = 1 << 2;
-pub const VIR_CONNECT_LIST_SECRETS_NO_PRIVATE: SecretsFlags = 1 << 3;
+#[derive(Clone, Debug, PartialEq)]
+pub enum Flags {
+    /// Kept in memory, never stored persistently.
+    EPHEMERAL = 0,
+    /// !EPHEMERAL.
+    NO_EPHEMERAL = 1,
+    /// Not revealed to any caller of libvirt, nor to any other
+    /// node.
+    PRIVATE = 2,
+    /// !PRIVATE.
+    NO_PRIVATE = 3,
+}
 
 /// Provides APIs for the management of secrets.
+///
+/// A Secret stores a secret value (e.g. a passphrase or encryption
+/// key) and associated metadata.
 ///
 /// See http://libvirt.org/html/libvirt-libvirt-secret.html
 #[derive(Debug)]
@@ -196,9 +210,9 @@ impl Secret {
         }
     }
 
-    pub fn get_xml_desc(&self, flags: SecretXMLFlags) -> Result<String, Error> {
+    pub fn get_xml_desc(&self, flags: XMLFlags) -> Result<String, Error> {
         unsafe {
-            let xml = virSecretGetXMLDesc(self.as_ptr(), flags);
+            let xml = virSecretGetXMLDesc(self.as_ptr(), flags as libc::c_uint);
             if xml.is_null() {
                 return Err(Error::new());
             }

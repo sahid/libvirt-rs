@@ -116,39 +116,68 @@ extern "C" {
                            -> libc::c_int;
 }
 
-pub type StorageVolCreateFlags = self::libc::c_uint;
-pub const VIR_STORAGE_VOL_CREATE_PREALLOC_METADATA: StorageVolCreateFlags = 1 << 0;
-pub const VIR_STORAGE_VOL_CREATE_REFLINK: StorageVolCreateFlags = 1 << 1;
+#[derive(Clone, Debug, PartialEq)]
+pub enum CreateFlags {
+    NORMAL = 0,
+    PREALLOC_METADATA = 1,
+    /// Perform a btrfs lightweight copy.
+    REFLINK = 2,
+}
 
-pub type StorageVolResizeFlags = self::libc::c_uint;
-pub const VIR_STORAGE_VOL_RESIZE_ALLOCATE: StorageVolResizeFlags = 1 << 0;
-pub const VIR_STORAGE_VOL_RESIZE_DELTA: StorageVolResizeFlags = 1 << 1;
-pub const VIR_STORAGE_VOL_RESIZE_SHRINK: StorageVolResizeFlags = 1 << 2;
+#[derive(Clone, Debug, PartialEq)]
+pub enum ResizeFlags {
+    NORMAL = 0,
+    /// Force allocation of new size.
+    ALLOCATE = 1,
+    /// Size is relative to current.
+    DELTA = 2,
+    /// Allow decrease in capacity.
+    SHRINK = 3,
+}
 
-pub type StorageVolWipeAlgorithm = self::libc::c_uint;
-pub const VIR_STORAGE_VOL_WIPE_ALG_ZERO: StorageVolWipeAlgorithm = 0;
-pub const VIR_STORAGE_VOL_WIPE_ALG_NNSA: StorageVolWipeAlgorithm = 1;
-pub const VIR_STORAGE_VOL_WIPE_ALG_DOD: StorageVolWipeAlgorithm = 2;
-pub const VIR_STORAGE_VOL_WIPE_ALG_BSI: StorageVolWipeAlgorithm = 3;
-pub const VIR_STORAGE_VOL_WIPE_ALG_GUTMANN: StorageVolWipeAlgorithm = 4;
-pub const VIR_STORAGE_VOL_WIPE_ALG_SCHNEIER: StorageVolWipeAlgorithm = 5;
-pub const VIR_STORAGE_VOL_WIPE_ALG_PFITZNER7: StorageVolWipeAlgorithm = 6;
-pub const VIR_STORAGE_VOL_WIPE_ALG_PFITZNER33: StorageVolWipeAlgorithm = 7;
-pub const VIR_STORAGE_VOL_WIPE_ALG_RANDOM: StorageVolWipeAlgorithm = 8;
-pub const VIR_STORAGE_VOL_WIPE_ALG_TRIM: StorageVolWipeAlgorithm = 9;
+#[derive(Clone, Debug, PartialEq)]
+pub enum WipeAlgorithm {
+    ZERO = 0,
+    NNSA = 1,
+    DOD = 2,
+    BSI = 3,
+    GUTMANN = 4,
+    SCHNEIER = 5,
+    PFITZNER7 = 6,
+    PFITZNER33 = 7,
+    RANDOM = 8,
+    TRIM = 9,
+}
 
-pub type StorageVolType = self::libc::c_uint;
-pub const VIR_STORAGE_VOL_FILE: StorageVolType = 0;
-pub const VIR_STORAGE_VOL_BLOCK: StorageVolType = 1;
-pub const VIR_STORAGE_VOL_DIR: StorageVolType = 2;
-pub const VIR_STORAGE_VOL_NETWORK: StorageVolType = 3;
-pub const VIR_STORAGE_VOL_NETDIR: StorageVolType = 4;
-pub const VIR_STORAGE_VOL_PLOOP: StorageVolType = 5;
+#[derive(Clone, Debug, PartialEq)]
+pub enum Type {
+    FILE = 0,
+    BLOCK = 1,
+    DIR = 2,
+    NETWORK = 3,
+    NETDIR = 4,
+    PLOOP = 5,
+}
+
+// TODO(sahid): Should provide a procedural macro
+impl ::std::convert::From<u32> for Type {
+    fn from(value: u32) -> Type {
+        match value {
+            0 => Type::FILE,
+            1 => Type::BLOCK,
+            2 => Type::DIR,
+            3 => Type::NETWORK,
+            4 => Type::NETDIR,
+            5 => Type::PLOOP,
+            unknow => panic!("Invalid Type provided: {:?}", unknow)
+        }
+    }
+}
 
 #[derive(Clone, Debug)]
 pub struct StorageVolInfo {
-    /// See: `virStorageVolType` flags
-    pub kind: u32,
+    /// See: `virType` flags
+    pub kind: Type,
     /// Logical size bytes.
     pub capacity: u64,
     /// Current allocation bytes
@@ -159,7 +188,7 @@ impl StorageVolInfo {
     pub fn from_ptr(ptr: sys::virStorageVolInfoPtr) -> StorageVolInfo {
         unsafe {
             StorageVolInfo {
-                kind: (*ptr).kind as StorageVolType,
+                kind: Type::from((*ptr).kind as u32),
                 capacity: (*ptr).capacity as u64,
                 allocation: (*ptr).allocation as u64,
             }
@@ -208,7 +237,7 @@ impl StorageVol {
 
     pub fn create_xml(pool: &StoragePool,
                       xml: &str,
-                      flags: StorageVolCreateFlags)
+                      flags: CreateFlags)
                       -> Result<StorageVol, Error> {
         unsafe {
             let ptr = virStorageVolCreateXML(pool.as_ptr(),
@@ -224,7 +253,7 @@ impl StorageVol {
     pub fn create_xml_from(pool: &StoragePool,
                            xml: &str,
                            vol: &StorageVol,
-                           flags: StorageVolCreateFlags)
+                           flags: CreateFlags)
                            -> Result<StorageVol, Error> {
         unsafe {
             let ptr = virStorageVolCreateXMLFrom(pool.as_ptr(),
@@ -326,7 +355,7 @@ impl StorageVol {
         }
     }
 
-    pub fn wipe_pattern(&self, algo: StorageVolWipeAlgorithm, flags: u32) -> Result<(), Error> {
+    pub fn wipe_pattern(&self, algo: WipeAlgorithm, flags: u32) -> Result<(), Error> {
         unsafe {
             if virStorageVolWipePattern(self.as_ptr(),
                                         algo as libc::c_uint,
